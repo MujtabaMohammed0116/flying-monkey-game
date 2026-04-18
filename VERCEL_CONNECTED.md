@@ -10,3 +10,15 @@ Every time you push to the `main` branch, Vercel will automatically:
 3. Deploy to production
 
 No manual deployment needed anymore!
+
+---
+
+## Latest Updates Included:
+- ✅ Mobile optimizations (viewport, touch handling)
+- ✅ PWA manifest for installable app
+- ✅ Jungle theme with wooden branches
+- ✅ Banana collectibles
+- ✅ Sound effects
+- ✅ Swinging rope animation
+
+**Testing deployment: April 17, 2026**
