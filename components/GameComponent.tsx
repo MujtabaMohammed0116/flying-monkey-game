@@ -158,10 +158,8 @@ export default function GameComponent() {
 
   // Main game loop with requestAnimationFrame
   useEffect(() => {
-    if (gameState !== "playing") return;
-
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || canvasSize.width === 0 || canvasSize.height === 0) return;
 
     const ctx = canvas.getContext("2d", {
       alpha: false, // Disable transparency for better performance
@@ -175,6 +173,39 @@ export default function GameComponent() {
     // Enable image smoothing for better emoji rendering on mobile
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
+
+    // Render initial state (for start/intro/gameOver screens)
+    if (gameState !== "playing") {
+      // Clear canvas with jungle green background
+      ctx.fillStyle = "#2d5016";
+      ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+
+      // Add gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvasSize.height);
+      gradient.addColorStop(0, "#4a7c2c");
+      gradient.addColorStop(1, "#2d5016");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+
+      // Render monkey in initial position
+      if (monkey.y > 0) {
+        // Render rope
+        ctx.strokeStyle = "#8b7355";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const monkeyCenterX = monkey.x + monkey.width / 2;
+        const monkeyTopY = monkey.y - 5;
+        ctx.moveTo(monkeyCenterX, 0);
+        ctx.lineTo(monkeyCenterX, monkeyTopY);
+        ctx.stroke();
+
+        // Render monkey
+        ctx.font = "40px Arial";
+        ctx.fillText("🐵", monkey.x, monkey.y + monkey.height);
+      }
+
+      return; // Don't start game loop for non-playing states
+    }
 
     let animationFrameId: number;
 
@@ -340,24 +371,24 @@ export default function GameComponent() {
         );
       });
 
-      // Render swinging rope/vine above monkey
+      // Render swinging rope/vine above monkey (closer connection)
       ctx.strokeStyle = "#8b7355"; // Brown rope color
       ctx.lineWidth = 2;
       ctx.beginPath();
       // Calculate rope swing based on monkey's velocity for dynamic effect
       const ropeSwing = updatedMonkey.velocityY * 2;
-      const ropeStartX = updatedMonkey.x + updatedMonkey.width / 2 + ropeSwing;
+      const monkeyCenterX = updatedMonkey.x + updatedMonkey.width / 2;
+      const monkeyTopY = updatedMonkey.y - 5; // Connect 5px above monkey for closer look
+      const ropeStartX = monkeyCenterX + ropeSwing;
       const ropeStartY = 0;
-      const ropeEndX = updatedMonkey.x + updatedMonkey.width / 2;
-      const ropeEndY = updatedMonkey.y;
       
-      // Draw curved rope
+      // Draw curved rope connecting to top of monkey
       ctx.moveTo(ropeStartX, ropeStartY);
       ctx.quadraticCurveTo(
         ropeStartX + ropeSwing / 2,
-        ropeEndY / 2,
-        ropeEndX,
-        ropeEndY
+        monkeyTopY / 2,
+        monkeyCenterX,
+        monkeyTopY
       );
       ctx.stroke();
 
