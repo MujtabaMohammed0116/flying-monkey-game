@@ -63,7 +63,7 @@ export default function GameComponent() {
     }
   };
 
-  // Input handling
+  // Input handling with mobile optimization
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
@@ -78,7 +78,8 @@ export default function GameComponent() {
       }
     };
 
-    const handleClick = () => {
+    const handleClick = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault(); // Prevent default touch behavior
       if (gameState === "start" || gameState === "intro") {
         handleStart();
       } else if (gameState === "playing") {
@@ -88,32 +89,60 @@ export default function GameComponent() {
       }
     };
 
+    // Add both mouse and touch events for better mobile support
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("click", handleClick);
+    window.addEventListener("touchstart", handleClick, { passive: false });
+
+    // Prevent pull-to-refresh and other mobile gestures
+    const preventDefaultTouch = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener("touchmove", preventDefaultTouch, { passive: false });
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("click", handleClick);
+      window.removeEventListener("touchstart", handleClick);
+      document.removeEventListener("touchmove", preventDefaultTouch);
     };
   }, [gameState, canvasSize.height]);
 
-  // Handle canvas resize to fill viewport
+  // Handle canvas resize to fill viewport with mobile optimization
   useEffect(() => {
     const updateCanvasSize = () => {
+      // Use window.innerWidth/Height for better mobile support
       const width = window.innerWidth;
       const height = window.innerHeight;
       setCanvasSize({ width, height });
+      
+      // Prevent mobile browser UI from interfering
+      if (typeof window !== 'undefined') {
+        // Set viewport height for mobile browsers
+        document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+      }
     };
 
     // Set initial size
     updateCanvasSize();
 
-    // Add resize listener
-    window.addEventListener("resize", updateCanvasSize);
+    // Add resize listener with debounce for performance
+    let resizeTimeout: NodeJS.Timeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateCanvasSize, 100);
+    };
+
+    window.addEventListener("resize", debouncedResize);
+    window.addEventListener("orientationchange", updateCanvasSize);
 
     // Cleanup
     return () => {
-      window.removeEventListener("resize", updateCanvasSize);
+      window.removeEventListener("resize", debouncedResize);
+      window.removeEventListener("orientationchange", updateCanvasSize);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 
@@ -134,11 +163,18 @@ export default function GameComponent() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", {
+      alpha: false, // Disable transparency for better performance
+      desynchronized: true, // Reduce latency on mobile
+    });
     if (!ctx) {
       console.error("Failed to get 2D context from canvas");
       return;
     }
+
+    // Enable image smoothing for better emoji rendering on mobile
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     let animationFrameId: number;
 
@@ -379,12 +415,29 @@ export default function GameComponent() {
   }, [gameState, monkey, obstacles, collectibles, score, bestScore, frameCount, canvasSize]);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
+    <div 
+      className="relative w-full h-screen overflow-hidden touch-none"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        touchAction: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      }}
+    >
       <canvas
         ref={canvasRef}
         width={canvasSize.width}
         height={canvasSize.height}
         className="block"
+        style={{
+          touchAction: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
       />
       
       {/* Start screen overlay */}
