@@ -46,7 +46,7 @@ export const GAME_CONFIG = {
   GAP_HEIGHT: 160,                 // pixels
   MONKEY_WIDTH: 40,                // pixels
   MONKEY_HEIGHT: 40,               // pixels
-  MONKEY_HITBOX_INSET: 4,          // pixels
+  MONKEY_HITBOX_INSET: 8,          // pixels (increased for more forgiving gameplay)
   OBSTACLE_WIDTH: 60,              // pixels
   TARGET_FPS: 60,                  // frames per second
   MONKEY_START_X: 100,             // pixels from left

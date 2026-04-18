@@ -150,8 +150,15 @@ export default function GameComponent() {
       const { checkScoring, updateBestScore } = require("@/utils/scoring");
       const { moveCollectibles, removeOffscreenCollectibles, shouldGenerateCollectible, generateCollectible, checkCollectibleCollection } = require("@/utils/collectibles");
 
-      // Clear canvas
-      ctx.fillStyle = "#87CEEB"; // Sky blue background
+      // Clear canvas with jungle green background
+      ctx.fillStyle = "#2d5016"; // Dark jungle green
+      ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+
+      // Add lighter green gradient for depth
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvasSize.height);
+      gradient.addColorStop(0, "#4a7c2c");
+      gradient.addColorStop(1, "#2d5016");
+      ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
       // 1. Apply physics updates (gravity, velocity, position)
@@ -226,35 +233,97 @@ export default function GameComponent() {
 
       const newScore = score + scoreIncrement + bonusPoints;
 
-      // Render obstacles
-      ctx.fillStyle = "#228B22"; // Forest green for pipes
-      updatedObstacles.forEach((obstacle) => {
+      // Render obstacles as wooden branches
+      updatedObstacles.forEach((obstacle: Obstacle) => {
         const gapHalfHeight = obstacle.gapHeight / 2;
-        // Top pipe
+        
+        // Draw wooden texture for branches
+        ctx.fillStyle = "#654321"; // Brown wood color
+        ctx.strokeStyle = "#3d2817"; // Darker brown for outline
+        ctx.lineWidth = 3;
+        
+        // Top branch
         ctx.fillRect(
           obstacle.x,
           0,
           obstacle.width,
           obstacle.gapY - gapHalfHeight
         );
-        // Bottom pipe
+        ctx.strokeRect(
+          obstacle.x,
+          0,
+          obstacle.width,
+          obstacle.gapY - gapHalfHeight
+        );
+        
+        // Add wood grain lines to top branch
+        ctx.strokeStyle = "#8b6914";
+        ctx.lineWidth = 1;
+        for (let i = 10; i < obstacle.gapY - gapHalfHeight; i += 20) {
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x, i);
+          ctx.lineTo(obstacle.x + obstacle.width, i);
+          ctx.stroke();
+        }
+        
+        // Bottom branch
+        ctx.fillStyle = "#654321";
+        ctx.strokeStyle = "#3d2817";
+        ctx.lineWidth = 3;
         ctx.fillRect(
           obstacle.x,
           obstacle.gapY + gapHalfHeight,
           obstacle.width,
           canvasSize.height - (obstacle.gapY + gapHalfHeight)
         );
+        ctx.strokeRect(
+          obstacle.x,
+          obstacle.gapY + gapHalfHeight,
+          obstacle.width,
+          canvasSize.height - (obstacle.gapY + gapHalfHeight)
+        );
+        
+        // Add wood grain lines to bottom branch
+        ctx.strokeStyle = "#8b6914";
+        ctx.lineWidth = 1;
+        for (let i = obstacle.gapY + gapHalfHeight + 10; i < canvasSize.height; i += 20) {
+          ctx.beginPath();
+          ctx.moveTo(obstacle.x, i);
+          ctx.lineTo(obstacle.x + obstacle.width, i);
+          ctx.stroke();
+        }
       });
 
-      // Render collectibles (milk bottles)
+      // Render collectibles (bananas)
       ctx.font = "30px Arial";
-      updatedCollectibles.forEach((collectible) => {
+      updatedCollectibles.forEach((collectible: Collectible) => {
         ctx.fillText(
-          "🍼",
+          "🍌",
           collectible.x,
           collectible.y + collectible.height
         );
       });
+
+      // Render swinging rope/vine above monkey
+      ctx.strokeStyle = "#8b7355"; // Brown rope color
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      // Calculate rope swing based on monkey's velocity for dynamic effect
+      const ropeSwing = updatedMonkey.velocityY * 2;
+      const ropeStartX = updatedMonkey.x + updatedMonkey.width / 2 + ropeSwing;
+      const ropeStartY = 0;
+      const ropeEndX = updatedMonkey.x + updatedMonkey.width / 2;
+      const ropeEndY = updatedMonkey.y;
+      
+      // Draw curved rope
+      ctx.moveTo(ropeStartX, ropeStartY);
+      ctx.quadraticCurveTo(
+        ropeStartX + ropeSwing / 2,
+        ropeEndY / 2,
+        ropeEndX,
+        ropeEndY
+      );
+      ctx.stroke();
 
       // Render monkey with emoji
       ctx.font = "40px Arial";
@@ -264,10 +333,15 @@ export default function GameComponent() {
         updatedMonkey.y + updatedMonkey.height
       );
 
-      // Render HUD (score)
-      ctx.fillStyle = "#000000";
+      // Render HUD (score) with better visibility on jungle background
+      ctx.fillStyle = "#ffffff"; // White text
+      ctx.strokeStyle = "#000000"; // Black outline
+      ctx.lineWidth = 3;
       ctx.font = "bold 32px Arial";
       ctx.textAlign = "right";
+      // Draw text outline
+      ctx.strokeText(`Score: ${newScore}`, canvasSize.width - 20, 50);
+      // Draw text fill
       ctx.fillText(`Score: ${newScore}`, canvasSize.width - 20, 50);
 
       // 10. Trigger game over on collision or bottom boundary hit
@@ -323,10 +397,10 @@ export default function GameComponent() {
       
       {/* Intro message overlay */}
       {gameState === "intro" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-green-900 to-green-950 bg-opacity-90 text-white">
           <div className="text-5xl mb-6">🐵</div>
           <p className="text-3xl text-center px-8 leading-relaxed">
-            Hi I'm a naughty monkey and i like to jump and fly!
+            Hi I&apos;m a naughty monkey and i like to jump and fly!
           </p>
           <p className="text-lg mt-8 opacity-75">Press Space or Click to continue</p>
         </div>
