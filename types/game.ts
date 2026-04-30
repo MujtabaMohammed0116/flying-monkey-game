@@ -38,22 +38,22 @@ export interface Collectible {
 
 // Game configuration constants
 export const GAME_CONFIG = {
-  GRAVITY: 0.5,                    // pixels per frame squared
+  GRAVITY: 0.45,                   // slightly softer gravity for mobile feel
   FLAP_VELOCITY: -8,               // pixels per frame
-  MAX_FALL_VELOCITY: 12,           // pixels per frame
-  HORIZONTAL_SPEED: 3,             // pixels per frame
-  OBSTACLE_INTERVAL: 90,           // frames
-  GAP_HEIGHT: 160,                 // pixels
-  MONKEY_WIDTH: 40,                // pixels
-  MONKEY_HEIGHT: 40,               // pixels
-  MONKEY_HITBOX_INSET: 8,          // pixels (increased for more forgiving gameplay)
-  OBSTACLE_WIDTH: 60,              // pixels
+  MAX_FALL_VELOCITY: 10,           // pixels per frame (reduced for more control)
+  HORIZONTAL_SPEED: 2.5,           // pixels per frame (slower = more playable on mobile)
+  OBSTACLE_INTERVAL: 100,          // frames (slightly more time between obstacles)
+  GAP_HEIGHT: 200,                 // pixels (increased from 160 to match bigger monkey)
+  MONKEY_WIDTH: 56,                // pixels (increased from 40)
+  MONKEY_HEIGHT: 56,               // pixels (increased from 40)
+  MONKEY_HITBOX_INSET: 12,         // pixels (larger inset for bigger monkey = fair hitbox)
+  OBSTACLE_WIDTH: 65,              // pixels
   TARGET_FPS: 60,                  // frames per second
   MONKEY_START_X: 100,             // pixels from left
   GAP_MIN_POSITION: 0.2,           // 20% of canvas height
   GAP_MAX_POSITION: 0.8,           // 80% of canvas height
-  COLLECTIBLE_INTERVAL: 270,       // frames (3x the obstacle interval - less frequent)
-  COLLECTIBLE_WIDTH: 30,           // pixels
-  COLLECTIBLE_HEIGHT: 30,          // pixels
+  COLLECTIBLE_INTERVAL: 270,       // frames
+  COLLECTIBLE_WIDTH: 36,           // pixels (slightly bigger to match scale)
+  COLLECTIBLE_HEIGHT: 36,          // pixels
   COLLECTIBLE_BONUS_POINTS: 5,     // bonus points per collectible
 } as const;

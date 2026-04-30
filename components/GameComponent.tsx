@@ -166,7 +166,7 @@ function drawMonkey(
   ctx.restore();
 }
 
-// ─── Draw rope attached to monkey's hands ─────────────────────────────────────
+// ─── Draw single rope from top of screen to monkey's head ────────────────────
 function drawRope(
   ctx: CanvasRenderingContext2D,
   monkeyX: number,
@@ -179,54 +179,43 @@ function drawRope(
   const cy = monkeyY + monkeyWidth / 2;
   const tilt = Math.max(-0.3, Math.min(0.3, velocityY * 0.04));
 
-  // Hand positions (matching drawMonkey's hand coords, rotated by tilt)
-  const lhLocalX = -10 * scale;
-  const lhLocalY = -16 * scale;
-  const rhLocalX = 10 * scale;
-  const rhLocalY = -16 * scale;
-
+  // Top of head in local coords is (0, -31*scale), rotate by tilt
+  const headLocalX = 0;
+  const headLocalY = -31 * scale;
   const cos = Math.cos(tilt);
   const sin = Math.sin(tilt);
+  const attachX = cx + headLocalX * cos - headLocalY * sin;
+  const attachY = cy + headLocalX * sin + headLocalY * cos;
 
-  const lhX = cx + lhLocalX * cos - lhLocalY * sin;
-  const lhY = cy + lhLocalX * sin + lhLocalY * cos;
-  const rhX = cx + rhLocalX * cos - rhLocalY * sin;
-  const rhY = cy + rhLocalX * sin + rhLocalY * cos;
+  // Swing offset based on velocity
+  const swing = velocityY * 1.8;
+  const topX = attachX + swing;
 
-  // Rope swing offset based on velocity
-  const swing = velocityY * 1.5;
-
-  // Draw rope from top of screen to each hand
-  ctx.lineWidth = 3;
+  // Rope gradient
+  const ropeGrad = ctx.createLinearGradient(topX, 0, attachX, attachY);
+  ropeGrad.addColorStop(0, "#a0784a");
+  ropeGrad.addColorStop(0.5, "#7a5530");
+  ropeGrad.addColorStop(1, "#5a3a1a");
+  ctx.strokeStyle = ropeGrad;
+  ctx.lineWidth = 4 * scale;
   ctx.lineCap = "round";
 
-  // Left rope strand
-  const ropeGrad = ctx.createLinearGradient(lhX + swing, 0, lhX, lhY);
-  ropeGrad.addColorStop(0, "#a0784a");
-  ropeGrad.addColorStop(1, "#6b4c2a");
-  ctx.strokeStyle = ropeGrad;
+  // Single curved rope
   ctx.beginPath();
-  ctx.moveTo(lhX + swing, 0);
-  ctx.quadraticCurveTo(lhX + swing * 0.5, lhY * 0.5, lhX, lhY);
+  ctx.moveTo(topX, 0);
+  ctx.quadraticCurveTo(topX + swing * 0.4, attachY * 0.5, attachX, attachY);
   ctx.stroke();
 
-  // Right rope strand
-  const ropeGrad2 = ctx.createLinearGradient(rhX + swing, 0, rhX, rhY);
-  ropeGrad2.addColorStop(0, "#a0784a");
-  ropeGrad2.addColorStop(1, "#6b4c2a");
-  ctx.strokeStyle = ropeGrad2;
-  ctx.beginPath();
-  ctx.moveTo(rhX + swing, 0);
-  ctx.quadraticCurveTo(rhX + swing * 0.5, rhY * 0.5, rhX, rhY);
-  ctx.stroke();
-
-  // Rope knot dots for texture
-  ctx.fillStyle = "#5a3a1a";
-  for (let t = 0.2; t < 1; t += 0.25) {
-    const kx = lhX + swing + (lhX - lhX - swing) * t + swing * (1 - t);
-    const ky = lhY * t;
+  // Knot dots along rope for texture
+  ctx.fillStyle = "#3d2010";
+  const steps = 5;
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    // Quadratic bezier point
+    const bx = (1 - t) * (1 - t) * topX + 2 * (1 - t) * t * (topX + swing * 0.4) + t * t * attachX;
+    const by = (1 - t) * (1 - t) * 0 + 2 * (1 - t) * t * (attachY * 0.5) + t * t * attachY;
     ctx.beginPath();
-    ctx.arc(kx, ky, 2, 0, Math.PI * 2);
+    ctx.arc(bx, by, 2 * scale, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -458,7 +447,7 @@ function drawBranch(
   ctx.fill();
 }
 
-// ─── Draw banana collectible ───────────────────────────────────────────────────
+// ─── Draw banana collectible (no glow, proper banana shape) ──────────────────
 function drawBanana(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -466,38 +455,51 @@ function drawBanana(
   size: number,
   frameCount: number
 ) {
-  const bob = Math.sin(frameCount * 0.08) * 3; // gentle bobbing
+  const bob = Math.sin(frameCount * 0.08) * 3;
   ctx.save();
   ctx.translate(x + size / 2, y + size / 2 + bob);
 
-  // Glow effect
-  ctx.shadowColor = "#ffdd00";
-  ctx.shadowBlur = 12;
+  const s = size / 30; // scale factor
 
-  // Banana body
+  // ── Banana body (curved yellow shape) ──
+  ctx.fillStyle = "#f5d800";
   ctx.strokeStyle = "#c8a000";
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 1.5 * s;
+  ctx.beginPath();
+  // Outer curve
+  ctx.moveTo(-8 * s, 10 * s);
+  ctx.bezierCurveTo(-14 * s, 0, -12 * s, -12 * s, 0, -13 * s);
+  ctx.bezierCurveTo(10 * s, -14 * s, 14 * s, -4 * s, 12 * s, 8 * s);
+  // Inner curve back
+  ctx.bezierCurveTo(10 * s, 4 * s, 6 * s, -6 * s, 0, -7 * s);
+  ctx.bezierCurveTo(-6 * s, -8 * s, -7 * s, 0, -4 * s, 8 * s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // ── Banana tip (dark end) ──
+  ctx.fillStyle = "#8b6914";
+  ctx.beginPath();
+  ctx.ellipse(-8 * s, 10 * s, 3 * s, 2 * s, 0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Stem ──
+  ctx.strokeStyle = "#5a4010";
+  ctx.lineWidth = 2 * s;
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.arc(0, 0, size * 0.4, Math.PI * 1.1, Math.PI * 0.1, false);
+  ctx.moveTo(0, -13 * s);
+  ctx.quadraticCurveTo(4 * s, -18 * s, 2 * s, -20 * s);
   ctx.stroke();
 
-  // Banana fill
-  ctx.strokeStyle = "#ffe135";
-  ctx.lineWidth = 3;
+  // ── Highlight stripe ──
+  ctx.strokeStyle = "rgba(255,255,200,0.5)";
+  ctx.lineWidth = 1.5 * s;
   ctx.beginPath();
-  ctx.arc(0, 0, size * 0.4, Math.PI * 1.1, Math.PI * 0.1, false);
+  ctx.moveTo(-2 * s, 8 * s);
+  ctx.bezierCurveTo(-6 * s, 0, -5 * s, -8 * s, 2 * s, -10 * s);
   ctx.stroke();
 
-  // Stem
-  ctx.strokeStyle = "#8b6914";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(size * 0.35, -size * 0.15);
-  ctx.lineTo(size * 0.2, -size * 0.4);
-  ctx.stroke();
-
-  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
