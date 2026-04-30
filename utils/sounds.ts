@@ -91,55 +91,113 @@ export function playGameOverSound() {
 }
 
 /**
- * Play monkey "oo oo aa aa" sound using frequency modulation
- * Synthesizes a primate call with vibrato and pitch bends
+ * Play cartoon monkey sound.
+ * Tries to load /sounds/monkey.mp3 first (real sound file).
+ * Falls back to synthesized cartoon sound if file not found.
  */
 export function playMonkeySound() {
+  // Try real audio file first
+  if (typeof window !== 'undefined') {
+    const audio = new Audio('/sounds/monkey.mp3');
+    audio.volume = 0.8;
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // File not found or blocked - fall back to synthesized sound
+        playMonkeySoundSynthesized();
+      });
+    }
+    return;
+  }
+  playMonkeySoundSynthesized();
+}
+
+/**
+ * Synthesized cartoon monkey sound fallback.
+ * Uses layered oscillators + noise + rapid pitch hops for a
+ * more cartoon-like "eek eek chatter" effect.
+ */
+function playMonkeySoundSynthesized() {
   const ctx = getAudioContext();
   if (!ctx) return;
 
   try {
-    // Each "syllable": [startFreq, endFreq, startTime, duration]
-    const syllables = [
-      { start: 380, end: 520, time: 0.0,  dur: 0.18 }, // "oo"
-      { start: 520, end: 360, time: 0.22, dur: 0.18 }, // "oo"
-      { start: 420, end: 620, time: 0.48, dur: 0.20 }, // "aa"
-      { start: 620, end: 380, time: 0.72, dur: 0.20 }, // "aa"
+    // Master gain
+    const master = ctx.createGain();
+    master.gain.value = 0.5;
+    master.connect(ctx.destination);
+
+    // ── Chatter bursts: rapid high-pitched squeaks ──
+    // Cartoon monkeys have fast, high, erratic calls
+    const chatters = [
+      { freq: 900,  time: 0.00, dur: 0.07 },
+      { freq: 1100, time: 0.09, dur: 0.07 },
+      { freq: 800,  time: 0.18, dur: 0.07 },
+      { freq: 1050, time: 0.27, dur: 0.07 },
+      { freq: 950,  time: 0.36, dur: 0.07 },
+      // "aa aa" lower calls
+      { freq: 480,  time: 0.50, dur: 0.14 },
+      { freq: 380,  time: 0.67, dur: 0.14 },
+      { freq: 520,  time: 0.84, dur: 0.14 },
     ];
 
-    syllables.forEach(({ start, end, time, dur }) => {
+    chatters.forEach(({ freq, time, dur }) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      // LFO for vibrato (makes it sound more animal-like)
+      // LFO for wobble
       const lfo = ctx.createOscillator();
       const lfoGain = ctx.createGain();
-      lfo.frequency.value = 8;       // 8Hz vibrato rate
-      lfoGain.gain.value = 18;       // vibrato depth in Hz
+      lfo.frequency.value = 12;
+      lfoGain.gain.value = freq * 0.08; // 8% pitch wobble
       lfo.connect(lfoGain);
       lfoGain.connect(osc.frequency);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(master);
+      osc.type = 'sine';
 
-      osc.type = "sine";
+      // Pitch slide up then down (cartoon bounce)
+      osc.frequency.setValueAtTime(freq * 0.85, ctx.currentTime + time);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, ctx.currentTime + time + dur * 0.4);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.9, ctx.currentTime + time + dur);
 
-      // Pitch bend from start to end frequency
-      osc.frequency.setValueAtTime(start, ctx.currentTime + time);
-      osc.frequency.exponentialRampToValueAtTime(end, ctx.currentTime + time + dur);
-
-      // Volume envelope: quick attack, sustain, quick release
+      // Sharp attack, quick decay
       gain.gain.setValueAtTime(0.001, ctx.currentTime + time);
-      gain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + time + 0.04);
-      gain.gain.setValueAtTime(0.28, ctx.currentTime + time + dur - 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.6, ctx.currentTime + time + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + dur);
 
       lfo.start(ctx.currentTime + time);
       osc.start(ctx.currentTime + time);
-      lfo.stop(ctx.currentTime + time + dur);
-      osc.stop(ctx.currentTime + time + dur);
+      lfo.stop(ctx.currentTime + time + dur + 0.01);
+      osc.stop(ctx.currentTime + time + dur + 0.01);
     });
+
+    // ── Breath/noise layer for texture ──
+    const bufferSize = ctx.sampleRate * 1.2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = 800;
+    bandpass.Q.value = 3;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.04, ctx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+
+    noise.connect(bandpass);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(master);
+    noise.start(ctx.currentTime);
+    noise.stop(ctx.currentTime + 1.0);
+
   } catch (e) {
-    console.warn("Error playing monkey sound", e);
+    console.warn('Error playing monkey sound', e);
   }
 }
