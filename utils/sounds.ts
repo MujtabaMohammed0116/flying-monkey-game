@@ -89,3 +89,57 @@ export function playGameOverSound() {
     console.warn('Error playing sound', e);
   }
 }
+
+/**
+ * Play monkey "oo oo aa aa" sound using frequency modulation
+ * Synthesizes a primate call with vibrato and pitch bends
+ */
+export function playMonkeySound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    // Each "syllable": [startFreq, endFreq, startTime, duration]
+    const syllables = [
+      { start: 380, end: 520, time: 0.0,  dur: 0.18 }, // "oo"
+      { start: 520, end: 360, time: 0.22, dur: 0.18 }, // "oo"
+      { start: 420, end: 620, time: 0.48, dur: 0.20 }, // "aa"
+      { start: 620, end: 380, time: 0.72, dur: 0.20 }, // "aa"
+    ];
+
+    syllables.forEach(({ start, end, time, dur }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // LFO for vibrato (makes it sound more animal-like)
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.value = 8;       // 8Hz vibrato rate
+      lfoGain.gain.value = 18;       // vibrato depth in Hz
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = "sine";
+
+      // Pitch bend from start to end frequency
+      osc.frequency.setValueAtTime(start, ctx.currentTime + time);
+      osc.frequency.exponentialRampToValueAtTime(end, ctx.currentTime + time + dur);
+
+      // Volume envelope: quick attack, sustain, quick release
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + time);
+      gain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + time + 0.04);
+      gain.gain.setValueAtTime(0.28, ctx.currentTime + time + dur - 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + dur);
+
+      lfo.start(ctx.currentTime + time);
+      osc.start(ctx.currentTime + time);
+      lfo.stop(ctx.currentTime + time + dur);
+      osc.stop(ctx.currentTime + time + dur);
+    });
+  } catch (e) {
+    console.warn("Error playing monkey sound", e);
+  }
+}

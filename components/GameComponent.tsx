@@ -531,6 +531,9 @@ export default function GameComponent() {
   const handleStart = () => {
     if (gameState === "start") {
       setGameState("intro");
+      // Play monkey sound when game starts
+      const { playMonkeySound } = require("@/utils/sounds");
+      playMonkeySound();
       setTimeout(() => setGameState("playing"), 3000);
     } else if (gameState === "intro") {
       setGameState("playing");
