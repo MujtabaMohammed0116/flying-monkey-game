@@ -44,9 +44,9 @@ export const GAME_CONFIG = {
   HORIZONTAL_SPEED: 2.5,           // pixels per frame (slower = more playable on mobile)
   OBSTACLE_INTERVAL: 100,          // frames (slightly more time between obstacles)
   GAP_HEIGHT: 200,                 // pixels (increased from 160 to match bigger monkey)
-  MONKEY_WIDTH: 56,                // pixels (increased from 40)
-  MONKEY_HEIGHT: 56,               // pixels (increased from 40)
-  MONKEY_HITBOX_INSET: 12,         // pixels (larger inset for bigger monkey = fair hitbox)
+  MONKEY_WIDTH: 44,                // pixels (balanced - visible but not too big)
+  MONKEY_HEIGHT: 44,               // pixels
+  MONKEY_HITBOX_INSET: 10,         // pixels (fair hitbox)
   OBSTACLE_WIDTH: 65,              // pixels
   TARGET_FPS: 60,                  // frames per second
   MONKEY_START_X: 100,             // pixels from left
